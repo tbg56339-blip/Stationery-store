@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Set up Java 17 (Required for Android Gradle)
+      - name: Set up Java 21 (Required for Android Gradle)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -30,7 +30,7 @@ jobs:
           echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=https://tbg56339-blip.github.io/Stationery-store/customer.html"></head><body style="background:#06080F"></body></html>' > build-customer/www/index.html
           cd build-customer
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
           npx cap init "Muni Stationery" "com.muni.stationery.customer" --web-dir www
           node -e '
             const fs = require("fs");
@@ -49,6 +49,7 @@ jobs:
           npx cap add android
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           sed -i 's|<application|<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <application|' $MANIFEST
+          printf '\nconfigurations.all {\n    resolutionStrategy {\n        force "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"\n        force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22"\n        force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"\n    }\n}\n' >> android/app/build.gradle
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
@@ -60,7 +61,7 @@ jobs:
           echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=https://tbg56339-blip.github.io/Stationery-store/admin.html"></head><body style="background:#06080F"></body></html>' > build-admin/www/index.html
           cd build-admin
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
           npx cap init "Muni Admin" "com.muni.stationery.admin" --web-dir www
           node -e '
             const fs = require("fs");
@@ -79,6 +80,7 @@ jobs:
           npx cap add android
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           sed -i 's|<application|<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <application|' $MANIFEST
+          printf '\nconfigurations.all {\n    resolutionStrategy {\n        force "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"\n        force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22"\n        force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"\n    }\n}\n' >> android/app/build.gradle
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
