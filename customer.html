@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Muni Stationery • Luxury Store</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
+          },
+          colors: {
+            gold: {
+              300: '#F3E5AB',
+              400: '#E6C687',
+              500: '#D4AF37',
+              600: '#AA820A',
+              700: '#795D05',
+            },
+            obsidian: {
+              900: '#06080F',
+              800: '#0B0F19',
+              700: '#131B2E',
+              600: '#1E293B',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #FFF6D6 0%, #D4AF37 50%, #AA820A 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .gold-btn {
+      background: linear-gradient(135deg, #E6C687 0%, #D4AF37 50%, #B8860B 100%);
+      box-shadow: 0 4px 18px rgba(212, 175, 55, 0.25);
+    }
+    .gold-btn:active {
+      transform: scale(0.98);
+    }
+    .glass-card {
+      background: rgba(19, 27, 46, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(212, 175, 55, 0.16);
+    }
+    .glass-nav {
+      background: rgba(11, 15, 25, 0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-obsidian-900 text-slate-100 min-h-screen pb-32 font-sans selection:bg-gold-500 selection:text-black">
+
+  <!-- Ambient Glow -->
+  <div class="fixed top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-gold-500/10 rounded-full blur-[130px] pointer-events-none z-0"></div>
+
+  <!-- Mandatory Location Verification Modal -->
+  <div id="gpsModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-card bg-obsidian-800 rounded-3xl p-6 w-full max-w-sm text-center border border-gold-500/30 shadow-2xl">
+      <div class="w-16 h-16 bg-gold-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gold-500/30">
+        <i class="fa-solid fa-location-crosshairs text-gold-400 text-2xl animate-pulse"></i>
+      </div>
+      <h2 class="text-base font-serif font-extrabold gold-gradient-text uppercase tracking-wider mb-1">Location Required</h2>
+      <p class="text-xs text-slate-400 mb-5 leading-relaxed">
+        Muni Stationery delivers strictly within a <span class="text-gold-400 font-bold">5 km local radius</span>. Please enable location to access the store.
+      </p>
+      <button onclick="requestGPSPermission(true)" class="w-full gold-btn text-black font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg">
+        Allow Device GPS
+      </button>
+      <p id="gpsModalError" class="text-rose-400 text-[11px] font-semibold mt-3 hidden"></p>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="glass-nav sticky top-0 z-40 px-4 py-3.5">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-gold-600 via-gold-400 to-amber-200 p-[1px] shadow-lg shadow-gold-500/10">
+          <div class="w-full h-full bg-obsidian-800 rounded-2xl flex items-center justify-center">
+            <i class="fa-solid fa-feather-pointed text-gold-400 text-base"></i>
+          </div>
+        </div>
+        <div>
+          <h1 class="text-sm font-serif font-extrabold tracking-wider gold-gradient-text uppercase">Muni Stationery</h1>
+          <div class="flex items-center gap-1.5 mt-0.5">
+            <span id="storePulse" class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+            <p id="storeStatusBadge" class="text-[10px] font-medium text-emerald-400 uppercase tracking-widest">Store Open</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Cart Trigger -->
+      <button onclick="openCartModal()" class="relative w-11 h-11 rounded-2xl glass-card flex items-center justify-center text-gold-400 hover:text-white transition group border border-gold-500/20">
+        <i class="fa-solid fa-bag-shopping text-base group-hover:scale-110 transition"></i>
+        <span id="cartCountBadge" class="absolute -top-1 -right-1 gold-btn text-black font-extrabold text-[10px] w-5 h-5 rounded-full flex items-center justify-center hidden shadow-md">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- GPS Status Pill & Search Carousel -->
+  <div class="max-w-md mx-auto px-4 mt-3 relative z-10">
+    <!-- Live Location Bar -->
+    <div id="locStatusBar" class="glass-card rounded-xl px-3 py-2 flex items-center justify-between text-[11px] mb-3 border border-gold-500/20">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-location-dot text-gold-400"></i>
+        <span id="locStatusText" class="text-slate-300">Checking delivery location...</span>
+      </div>
+      <button onclick="requestGPSPermission(false)" class="text-gold-400 text-[10px] font-bold uppercase underline">Refresh</button>
+    </div>
+
+    <!-- Search Input -->
+    <div class="relative mb-3">
+      <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-gold-500/60 text-xs"></i>
+      <input type="text" id="searchInput" oninput="filterCatalog()" placeholder="Search notebooks, pens, geometry boxes..." class="w-full bg-obsidian-800/80 border border-gold-500/20 text-slate-200 placeholder-slate-500 rounded-2xl py-3 pl-11 pr-4 text-xs focus:outline-none focus:border-gold-500/60 focus:ring-1 focus:ring-gold-500/40">
+    </div>
+
+    <!-- Category Pills -->
+    <div class="flex gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
+      <button onclick="selectCategory('All')" class="cat-pill px-4 py-2 rounded-xl text-xs font-semibold gold-btn text-black whitespace-nowrap">All Items</button>
+      <button onclick="selectCategory('Notebooks')" class="cat-pill px-4 py-2 rounded-xl text-xs font-medium glass-card text-slate-300 border border-gold-500/15 whitespace-nowrap">Notebooks & Books</button>
+      <button onclick="selectCategory('Pens')" class="cat-pill px-4 py-2 rounded-xl text-xs font-medium glass-card text-slate-300 border border-gold-500/15 whitespace-nowrap">Pens & Writing</button>
+      <button onclick="selectCategory('Exam')" class="cat-pill px-4 py-2 rounded-xl text-xs font-medium glass-card text-slate-300 border border-gold-500/15 whitespace-nowrap">Exam Essentials</button>
+      <button onclick="selectCategory('Art')" class="cat-pill px-4 py-2 rounded-xl text-xs font-medium glass-card text-slate-300 border border-gold-500/15 whitespace-nowrap">Art Supplies</button>
+      <button onclick="selectCategory('Office')" class="cat-pill px-4 py-2 rounded-xl text-xs font-medium glass-card text-slate-300 border border-gold-500/15 whitespace-nowrap">Files & Paper</button>
+    </div>
+  </div>
+
+  <!-- Privilege Banner -->
+  <div class="max-w-md mx-auto px-4 mt-2 relative z-10">
+    <div class="glass-card rounded-2xl p-3.5 flex items-center justify-between border border-gold-500/25">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-gold-500/10 flex items-center justify-center text-gold-400">
+          <i class="fa-solid fa-crown text-sm"></i>
+        </div>
+        <div>
+          <p id="privilegeBannerTitle" class="text-xs font-bold text-white tracking-wide">Free Delivery on ₹250+</p>
+          <p class="text-[10px] text-gold-400/80">Min order ₹50 • 5 km local delivery radius</p>
+        </div>
+      </div>
+      <i class="fa-solid fa-shield-halved text-gold-500/30 text-sm"></i>
+    </div>
+  </div>
+
+  <!-- Product Catalog Grid -->
+  <main class="max-w-md mx-auto px-4 mt-4 relative z-10">
+    <div id="catalogGrid" class="grid grid-cols-2 gap-3"></div>
+  </main>
+
+  <!-- Sticky Bottom Cart Bar -->
+  <div id="bottomBar" class="fixed bottom-0 inset-x-0 glass-nav p-4 z-30 hidden border-t border-gold-500/20">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div>
+        <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span id="bottomItemCount">0</span> Items Selected</p>
+        <p class="text-base font-extrabold text-white">₹<span id="bottomTotal">0</span></p>
+      </div>
+      <button onclick="openCartModal()" class="gold-btn text-black font-extrabold px-6 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-lg hover:brightness-110 transition">
+        <span>Proceed to Cart</span> <i class="fa-solid fa-chevron-right text-[10px]"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Luxury Cart Modal -->
+  <div id="cartModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-end justify-center hidden">
+    <div class="bg-obsidian-800 border-t border-gold-500/30 rounded-t-[32px] p-5 w-full max-w-md max-h-[92vh] overflow-y-auto text-slate-200">
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div>
+          <h2 class="text-sm font-serif font-bold text-white tracking-wider uppercase">Your Order Selection</h2>
+          <p class="text-[10px] text-gold-400/80">Delivered within 3–4 Hours via WhatsApp</p>
+        </div>
+        <button onclick="closeCartModal()" class="w-8 h-8 rounded-full glass-card flex items-center justify-center text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Min Order Warning -->
+      <div id="minOrderWarning" class="hidden mt-3 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] p-2.5 rounded-xl font-medium"></div>
+
+      <!-- Items List -->
+      <div id="cartItemsList" class="divide-y divide-white/5 my-3 max-h-48 overflow-y-auto text-xs no-scrollbar"></div>
+
+      <!-- Customer Location Details -->
+      <div class="glass-card rounded-2xl p-4 my-3 border border-gold-500/20">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-xs font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-map-pin text-gold-400"></i> Delivery Address
+          </p>
+          <span id="cartDistBadge" class="text-[9px] uppercase tracking-wider text-gold-500 font-bold bg-gold-500/10 px-2 py-0.5 rounded-full border border-gold-500/20">
+            Within 5 KM
+          </span>
+        </div>
+
+        <div class="space-y-2">
+          <input type="text" id="custName" placeholder="Full Name" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-500/50">
+          <input type="tel" id="custPhone" placeholder="10-digit WhatsApp Mobile Number" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-500/50">
+          <textarea id="custAddress" placeholder="House / Flat No., Colony, Street, Landmark" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-500/50" rows="2"></textarea>
+        </div>
+      </div>
+
+      <!-- Bill Breakdown -->
+      <div class="glass-card rounded-2xl p-4 space-y-2 text-xs border border-white/5 mb-4">
+        <div class="flex justify-between text-slate-400">
+          <span>Cart Subtotal</span>
+          <span class="text-white font-medium">₹<span id="billSubtotal">0</span></span>
+        </div>
+        <div class="flex justify-between text-slate-400">
+          <span>Delivery Charges</span>
+          <span id="billDelivery" class="font-semibold text-gold-400">Verifying...</span>
+        </div>
+        <div class="border-t border-white/10 pt-2 flex justify-between font-extrabold text-sm text-white">
+          <span class="gold-gradient-text">Total Payable</span>
+          <span class="text-gold-400">₹<span id="billGrandTotal">0</span></span>
+        </div>
+        <p class="text-[10px] text-slate-500 text-right italic">Pay via Cash or UPI on Doorstep Arrival</p>
+      </div>
+
+      <!-- CTA -->
+      <button onclick="dispatchToWhatsApp()" id="orderBtn" class="w-full gold-btn text-black font-extrabold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-xl hover:brightness-110 transition">
+        <i class="fa-brands fa-whatsapp text-base"></i> Transmit Order via WhatsApp
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAFY5QES8VX9PWXDoQaz_J0WjhPciNwKMg",
+      authDomain: "muni-378e5.firebaseapp.com",
+      databaseURL: "https://muni-378e5-default-rtdb.firebaseio.com",
+      projectId: "muni-378e5",
+      storageBucket: "muni-378e5.firebasestorage.app",
+      messagingSenderId: "999778171397",
+      appId: "1:999778171397:web:a9c2102e8bcana61b2ba6c"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let storeSettings = {
+      freeDeliveryAbove: 250,
+      minOrderValue: 50,
+      baseDeliveryFee: 20,
+      perKmCharge: 10,
+      maxRadiusKm: 5.0,
+      shopLat: 20.2961,
+      shopLon: 85.8245,
+      whatsappNumber: "919876543210",
+      isOpen: true
+    };
+
+    const starterProducts = {
+      "prod_01": { name: "Classmate Long Notebook (172 Pages)", category: "Notebooks", price: 70, inStock: true, image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300" },
+      "prod_02": { name: "Classmate Soft Cover Ruled Copy (120 Pgs)", category: "Notebooks", price: 45, inStock: true, image: "https://images.unsplash.com/photo-1589998059171-988d887df646?w=300" },
+      "prod_03": { name: "Reynolds 045 Fine Carbure Ball Pen (Pack of 5)", category: "Pens", price: 50, inStock: true, image: "https://images.unsplash.com/photo-1585336261026-70e28f117f7b?w=300" },
+      "prod_04": { name: "Reynolds Trimax Liquid Gel Pen (Blue)", category: "Pens", price: 60, inStock: true, image: "https://images.unsplash.com/photo-1569683795645-b62e50fbf103?w=300" },
+      "prod_05": { name: "Doms Mathematical Drawing Instruments Box", category: "Exam", price: 120, inStock: true, image: "https://images.unsplash.com/photo-1596495577886-d920f1fb7238?w=300" },
+      "prod_06": { name: "Transparent Hard Exam Pad / Clip Board", category: "Exam", price: 65, inStock: true, image: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=300" },
+      "prod_07": { name: "Faber-Castell 12 Bi-Colour Colour Pencils", category: "Art", price: 110, inStock: true, image: "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=300" },
+      "prod_08": { name: "Doms 24 Plastic Crayons Tin Box", category: "Art", price: 80, inStock: true, image: "https://images.unsplash.com/photo-1520690214124-2405c5217036?w=300" },
+      "prod_09": { name: "JK Copier A4 Paper Bundle (100 Sheets)", category: "Office", price: 95, inStock: true, image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=300" },
+      "prod_10": { name: "Kangaro Heavy Duty No. 10 Stapler + Pins", category: "Office", price: 85, inStock: true, image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300" },
+      "prod_11": { name: "Fevicol MR Squeezy Bottle (100g)", category: "Art", price: 40, inStock: true, image: "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=300" },
+      "prod_12": { name: "Camlin Pastel Highlighters (Pack of 5)", category: "Pens", price: 100, inStock: true, image: "https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?w=300" }
+    };
+
+    let allProducts = starterProducts;
+    let cart = {};
+    let activeCategory = 'All';
+    let customerCoords = null;
+    let computedDistance = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      requestGPSPermission(false);
+      listenToFirebase();
+    });
+
+    function requestGPSPermission(isFromModal = false) {
+      if (!navigator.geolocation) {
+        showGPSModal("GPS is not supported by your device.");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          customerCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+          computedDistance = calculateHaversineRoad(
+            storeSettings.shopLat, storeSettings.shopLon,
+            customerCoords.lat, customerCoords.lon
+          );
+
+          document.getElementById('gpsModal').classList.add('hidden');
+          const maxDist = storeSettings.maxRadiusKm || 5.0;
+
+          if (computedDistance > maxDist) {
+            document.getElementById('locStatusText').innerHTML = `<span class="text-rose-400 font-bold">${computedDistance.toFixed(1)} km away (Outside 5 km)</span>`;
+            document.getElementById('cartDistBadge').className = "text-[9px] uppercase tracking-wider text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20";
+            document.getElementById('cartDistBadge').innerText = `${computedDistance.toFixed(1)} km - Outside Zone`;
+          } else {
+            document.getElementById('locStatusText').innerHTML = `<span class="text-emerald-400 font-bold">${computedDistance.toFixed(1)} km away (In Delivery Zone)</span>`;
+            document.getElementById('cartDistBadge').className = "text-[9px] uppercase tracking-wider text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20";
+            document.getElementById('cartDistBadge').innerText = `${computedDistance.toFixed(1)} km away`;
+          }
+          refreshCartState();
+        },
+        (err) => {
+          showGPSModal("Please enable High Accuracy GPS in phone settings.");
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    }
+
+    function showGPSModal(msg) {
+      document.getElementById('gpsModal').classList.remove('hidden');
+      const errEl = document.getElementById('gpsModalError');
+      errEl.innerText = msg;
+      errEl.classList.remove('hidden');
+    }
+
+    function listenToFirebase() {
+      db.ref('store_settings').on('value', (snap) => {
+        if (snap.val()) {
+          storeSettings = snap.val();
+          updateSettingsHeader();
+          if (customerCoords) {
+            computedDistance = calculateHaversineRoad(
+              storeSettings.shopLat, storeSettings.shopLon,
+              customerCoords.lat, customerCoords.lon
+            );
+          }
+          refreshCartState();
+        }
+      });
+
+      db.ref('products').on('value', (snap) => {
+        const data = snap.val();
+        if (data && Object.keys(data).length > 0) {
+          allProducts = data;
+        } else {
+          allProducts = starterProducts;
+        }
+        renderProducts();
+      });
+    }
+
+    function updateSettingsHeader() {
+      document.getElementById('privilegeBannerTitle').innerText = `Free Delivery on ₹${storeSettings.freeDeliveryAbove}+`;
+      const badge = document.getElementById('storeStatusBadge');
+      const pulse = document.getElementById('storePulse');
+      if (storeSettings.isOpen !== false) {
+        badge.innerText = "Store Open";
+        badge.className = "text-[10px] font-medium text-emerald-400 uppercase tracking-widest";
+        pulse.className = "w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse";
+      } else {
+        badge.innerText = "Store Closed";
+        badge.className = "text-[10px] font-medium text-rose-500 uppercase tracking-widest";
+        pulse.className = "w-1.5 h-1.5 bg-rose-500 rounded-full";
+      }
+    }
+
+    function selectCategory(cat) {
+      activeCategory = cat;
+      document.querySelectorAll('.cat-pill').forEach(btn => {
+        if (btn.innerText.includes(cat) || (cat === 'All' && btn.innerText.includes('All'))) {
+          btn.className = "cat-pill px-4 py-2 rounded-xl text-xs font-semibold gold-btn text-black whitespace-nowrap";
+        } else {
+          btn.className = "cat-pill px-4 py-2 rounded-xl text-xs font-medium glass-card text-slate-300 border border-gold-500/15 whitespace-nowrap";
+        }
+      });
+      renderProducts();
+    }
+
+    function filterCatalog() {
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById('catalogGrid');
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const keys = Object.keys(allProducts);
+
+      const filtered = keys.filter(id => {
+        const item = allProducts[id];
+        const matchCategory = activeCategory === 'All' || item.category === activeCategory;
+        const matchSearch = item.name.toLowerCase().includes(search);
+        return matchCategory && matchSearch;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-2 text-center py-16 text-slate-500 text-xs">No matching stationery items found.</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(id => {
+        const item = allProducts[id];
+        const qty = cart[id] || 0;
+        const isOutOfStock = item.inStock === false;
+
+        return `
+          <div class="glass-card rounded-2xl p-3 border border-gold-500/15 flex flex-col justify-between transition hover:border-gold-500/40 ${isOutOfStock ? 'opacity-50' : ''}">
+            <div>
+              <div class="w-full h-28 rounded-xl overflow-hidden mb-2.5 bg-obsidian-900 border border-white/5 relative">
+                <img src="${item.image}" class="w-full h-full object-cover">
+                <span class="absolute top-1.5 left-1.5 text-[8px] font-bold uppercase tracking-widest text-gold-300 bg-obsidian-900/80 px-2 py-0.5 rounded-md border border-gold-500/20 backdrop-blur-sm">${item.category}</span>
+              </div>
+              <h3 class="text-xs font-semibold text-slate-100 line-clamp-2 leading-relaxed">${item.name}</h3>
+            </div>
+            
+            <div class="mt-3 pt-2 border-t border-white/5 flex items-center justify-between">
+              <span class="text-sm font-extrabold text-gold-400">₹${item.price}</span>
+              ${isOutOfStock ? 
+                `<span class="text-[9px] uppercase font-bold text-rose-400 tracking-wider">Out of Stock</span>` :
+                (qty === 0 ? 
+                  `<button onclick="adjustCart('${id}', 1)" class="gold-btn text-black font-extrabold text-[11px] px-3.5 py-1 rounded-lg hover:brightness-110 transition">Add</button>` :
+                  `<div class="flex items-center gap-2 bg-obsidian-700/80 border border-gold-500/30 px-2 py-0.5 rounded-lg text-xs font-bold text-white">
+                    <button onclick="adjustCart('${id}', -1)" class="text-gold-400 hover:text-white px-1">-</button>
+                    <span>${qty}</span>
+                    <button onclick="adjustCart('${id}', 1)" class="text-gold-400 hover:text-white px-1">+</button>
+                   </div>`
+                )
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function adjustCart(id, delta) {
+      cart[id] = (cart[id] || 0) + delta;
+      if (cart[id] <= 0) delete cart[id];
+      renderProducts();
+      refreshCartState();
+    }
+
+    function refreshCartState() {
+      let count = 0;
+      let subtotal = 0;
+      for (const id in cart) {
+        count += cart[id];
+        subtotal += cart[id] * (allProducts[id]?.price || 0);
+      }
+
+      const badge = document.getElementById('cartCountBadge');
+      const bar = document.getElementById('bottomBar');
+
+      if (count > 0) {
+        badge.innerText = count;
+        badge.classList.remove('hidden');
+        bar.classList.remove('hidden');
+        document.getElementById('bottomItemCount').innerText = count;
+        document.getElementById('bottomTotal').innerText = subtotal;
+      } else {
+        badge.classList.add('hidden');
+        bar.classList.add('hidden');
+        closeCartModal();
+      }
+
+      recalculateBill(subtotal);
+    }
+
+    function calculateHaversineRoad(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return (R * c) * 1.2;
+    }
+
+    function recalculateBill(subtotal) {
+      document.getElementById('billSubtotal').innerText = subtotal;
+      let deliveryCharge = 0;
+      const deliveryEl = document.getElementById('billDelivery');
+      const orderBtn = document.getElementById('orderBtn');
+      const minWarn = document.getElementById('minOrderWarning');
+
+      const minVal = storeSettings.minOrderValue || 50;
+      if (subtotal > 0 && subtotal < minVal) {
+        minWarn.innerHTML = `<i class="fa-solid fa-circle-exclamation mr-1"></i> Add ₹${minVal - subtotal} more to reach minimum order value of ₹${minVal}.`;
+        minWarn.classList.remove('hidden');
+      } else {
+        minWarn.classList.add('hidden');
+      }
+
+      if (!computedDistance) {
+        deliveryEl.innerText = "Location required";
+        document.getElementById('billGrandTotal').innerText = subtotal;
+        return;
+      }
+
+      const maxLimit = storeSettings.maxRadiusKm || 5.0;
+      if (computedDistance > maxLimit) {
+        deliveryEl.innerHTML = `<span class="text-rose-400 font-bold">Outside ${maxLimit} km zone</span>`;
+        orderBtn.disabled = true;
+        orderBtn.className = "w-full bg-slate-700 text-slate-400 font-bold py-3.5 rounded-2xl text-xs cursor-not-allowed";
+        return;
+      }
+
+      if (subtotal >= storeSettings.freeDeliveryAbove) {
+        deliveryCharge = 0;
+        deliveryEl.innerHTML = `<span class="text-emerald-400 font-bold">FREE Delivery</span>`;
+      } else {
+        deliveryCharge = Math.round(storeSettings.baseDeliveryFee + (computedDistance * storeSettings.perKmCharge));
+        deliveryEl.innerText = `₹${deliveryCharge} (${computedDistance.toFixed(1)} km)`;
+      }
+
+      document.getElementById('billGrandTotal').innerText = subtotal + deliveryCharge;
+
+      if (subtotal < minVal) {
+        orderBtn.disabled = true;
+        orderBtn.className = "w-full bg-slate-700 text-slate-400 font-bold py-3.5 rounded-2xl text-xs cursor-not-allowed";
+      } else {
+        orderBtn.disabled = false;
+        orderBtn.className = "w-full gold-btn text-black font-extrabold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-xl hover:brightness-110 transition";
+      }
+    }
+
+    function openCartModal() {
+      renderCartItems();
+      document.getElementById('cartModal').classList.remove('hidden');
+      refreshCartState();
+    }
+
+    function closeCartModal() {
+      document.getElementById('cartModal').classList.add('hidden');
+    }
+
+    function renderCartItems() {
+      const list = document.getElementById('cartItemsList');
+      const keys = Object.keys(cart);
+      if (keys.length === 0) {
+        list.innerHTML = `<p class="text-center py-6 text-slate-500 italic">Your collection basket is currently empty.</p>`;
+        return;
+      }
+
+      list.innerHTML = keys.map(id => {
+        const item = allProducts[id];
+        return `
+          <div class="flex items-center justify-between py-2.5">
+            <div>
+              <p class="font-semibold text-slate-100">${item.name}</p>
+              <p class="text-gold-400/80 text-[10px]">₹${item.price} each</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="font-extrabold text-gold-400">₹${item.price * cart[id]}</span>
+              <div class="flex items-center gap-1.5 bg-obsidian-900 border border-gold-500/20 px-2 py-0.5 rounded-lg font-bold">
+                <button onclick="adjustCart('${id}', -1)" class="text-gold-400 hover:text-white px-1">-</button>
+                <span class="text-white text-xs">${cart[id]}</span>
+                <button onclick="adjustCart('${id}', 1)" class="text-gold-400 hover:text-white px-1">+</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function dispatchToWhatsApp() {
+      if (storeSettings.isOpen === false) {
+        alert("The store is closed for orders at this hour.");
+        return;
+      }
+
+      let subtotal = 0;
+      for (const id in cart) {
+        subtotal += cart[id] * (allProducts[id]?.price || 0);
+      }
+
+      const minVal = storeSettings.minOrderValue || 50;
+      if (subtotal < minVal) {
+        alert(`Minimum order value is ₹${minVal}. Please add more stationery.`);
+        return;
+      }
+
+      if (!computedDistance || !customerCoords) {
+        requestGPSPermission(true);
+        return;
+      }
+
+      const name = document.getElementById('custName').value.trim();
+      const phone = document.getElementById('custPhone').value.trim();
+      const address = document.getElementById('custAddress').value.trim();
+
+      if (!name || !phone || !address) {
+        alert("Please enter your Name, Phone Number, and Delivery Address.");
+        return;
+      }
+
+      const orderRef = `OD-${Math.floor(1000 + Math.random() * 9000)}`;
+      let deliveryFee = subtotal >= storeSettings.freeDeliveryAbove ? 0 : Math.round(storeSettings.baseDeliveryFee + (computedDistance * storeSettings.perKmCharge));
+      let totalAmount = subtotal + deliveryFee;
+
+      let itemsFormatted = [];
+      for (const id in cart) {
+        itemsFormatted.push(`• ${allProducts[id].name} x ${cart[id]} = ₹${allProducts[id].price * cart[id]}`);
+      }
+
+      const message = `
+⚜️ *NEW ORDER: ${orderRef}* ⚜️
+*Muni Stationery Store*
+----------------------------------------
+*Customer Details:*
+• Name: ${name}
+• Phone: ${phone}
+• Address: ${address}
+• Distance: ${computedDistance.toFixed(1)} km from store
+• Map Coordinates: https://maps.google.com/?q=${customerCoords.lat},${customerCoords.lon}
+
+*Ordered Items:*
+${itemsFormatted.join('\n')}
+
+----------------------------------------
+*Subtotal:* ₹${subtotal}
+*Delivery Fee:* ${deliveryFee === 0 ? 'FREE' : '₹' + deliveryFee}
+*Total Payable:* ₹${totalAmount} (COD / UPI on Delivery)
+
+📍 *IMPORTANT FOR DOORSTEP DELIVERY:*
+Please tap '+' in this WhatsApp chat and share your *Live Location (for 1 Hour or 8 Hours)* so our delivery partner can reach your exact location.
+      `.trim();
+
+      const waUrl = `https://wa.me/${storeSettings.whatsappNumber}?text=${encodeURIComponent(message)}`;
+      window.open(waUrl, '_blank');
+      cart = {};
+      refreshCartState();
+      closeCartModal();
+    }
+  </script>
+</body>
+</html>
