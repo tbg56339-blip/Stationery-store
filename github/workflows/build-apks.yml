@@ -1,0 +1,93 @@
+name: Build Muni Stationery & Admin APKs
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-both-apks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build Customer APK (Muni Stationery)
+        run: |
+          mkdir -p build-customer/www
+          echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=https://tbg56339-blip.github.io/Stationery-store/customer.html"></head><body style="background:#06080F"></body></html>' > build-customer/www/index.html
+          cd build-customer
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init "Muni Stationery" "com.muni.stationery.customer" --web-dir www
+          node -e '
+            const fs = require("fs");
+            const cfg = {
+              appId: "com.muni.stationery.customer",
+              appName: "Muni Stationery",
+              webDir: "www",
+              server: {
+                url: "https://tbg56339-blip.github.io/Stationery-store/customer.html",
+                cleartext: true,
+                allowNavigation: ["tbg56339-blip.github.io", "*.firebaseio.com", "wa.me", "api.whatsapp.com"]
+              }
+            };
+            fs.writeFileSync("capacitor.config.json", JSON.stringify(cfg, null, 2));
+          '
+          npx cap add android
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          sed -i 's|<application|<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <application|' $MANIFEST
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk ../../Muni-Stationery-Customer.apk
+
+      - name: Build Admin APK (Muni Admin)
+        run: |
+          mkdir -p build-admin/www
+          echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=https://tbg56339-blip.github.io/Stationery-store/admin.html"></head><body style="background:#06080F"></body></html>' > build-admin/www/index.html
+          cd build-admin
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init "Muni Admin" "com.muni.stationery.admin" --web-dir www
+          node -e '
+            const fs = require("fs");
+            const cfg = {
+              appId: "com.muni.stationery.admin",
+              appName: "Muni Admin",
+              webDir: "www",
+              server: {
+                url: "https://tbg56339-blip.github.io/Stationery-store/admin.html",
+                cleartext: true,
+                allowNavigation: ["tbg56339-blip.github.io", "*.firebaseio.com"]
+              }
+            };
+            fs.writeFileSync("capacitor.config.json", JSON.stringify(cfg, null, 2));
+          '
+          npx cap add android
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          sed -i 's|<application|<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <application|' $MANIFEST
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk ../../Muni-Admin.apk
+
+      - name: Upload Both Android APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: Muni-Stationery-APKs
+          path: |
+            Muni-Stationery-Customer.apk
+            Muni-Admin.apk
