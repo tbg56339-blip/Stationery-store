@@ -116,7 +116,6 @@
 
       <!-- ==================== TAB 1: ANALYTICS & 1-YEAR RECORDS ==================== -->
       <section id="sec-analytics" class="space-y-4">
-        <!-- Timeframe Selector -->
         <div class="flex gap-1.5 overflow-x-auto no-scrollbar text-[11px]">
           <button onclick="setFilterPeriod('today')" class="period-btn px-3 py-1.5 rounded-lg font-bold gold-btn text-black whitespace-nowrap">Today</button>
           <button onclick="setFilterPeriod('week')" class="period-btn px-3 py-1.5 rounded-lg font-medium glass-card text-slate-300 whitespace-nowrap">This Week</button>
@@ -124,7 +123,6 @@
           <button onclick="setFilterPeriod('year')" class="period-btn px-3 py-1.5 rounded-lg font-medium glass-card text-slate-300 whitespace-nowrap">1-Year Archive</button>
         </div>
 
-        <!-- KPI Cards -->
         <div class="grid grid-cols-2 gap-3">
           <div class="glass-card rounded-2xl p-4 border border-gold-500/20">
             <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Total Revenue</p>
@@ -138,7 +136,6 @@
           </div>
         </div>
 
-        <!-- Quick Log Completed WhatsApp Order -->
         <div class="glass-card rounded-2xl p-4 border border-gold-500/20">
           <h3 class="text-xs font-bold text-gold-400 uppercase tracking-wider mb-3 flex items-center gap-2">
             <i class="fa-solid fa-receipt"></i> Log Completed WhatsApp Order
@@ -147,13 +144,12 @@
             <input type="text" id="logCustName" placeholder="Customer Name" class="bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-white placeholder-slate-500">
             <input type="number" id="logAmount" placeholder="Total Bill (₹)" class="bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-white placeholder-slate-500">
           </div>
-          <input type="text" id="logItemsSummary" placeholder="Items summary (e.g. 4 Classmate books, 1 pen set)" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 mb-3">
+          <input type="text" id="logItemsSummary" placeholder="Items summary (e.g. 2 Jhumka sets, 3 notebooks)" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 mb-3">
           <button onclick="logCompletedOrder()" class="w-full gold-btn text-black font-extrabold py-2.5 rounded-xl text-xs">
             + Record Sale in Ledger
           </button>
         </div>
 
-        <!-- Data Reset & 1-Year CSV Export Controls -->
         <div class="glass-card rounded-2xl p-4 border border-white/10 space-y-3">
           <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
             <i class="fa-solid fa-database text-gold-400"></i> Ledger Controls & Export
@@ -176,7 +172,6 @@
           </p>
         </div>
 
-        <!-- Recent Order Ledger -->
         <div class="glass-card rounded-2xl p-4 border border-white/10">
           <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">Recent Sales Log</h3>
           <div id="salesHistoryList" class="space-y-2 max-h-60 overflow-y-auto text-xs no-scrollbar">
@@ -187,7 +182,6 @@
 
       <!-- ==================== TAB 2: 100+ PRODUCT INVENTORY ==================== -->
       <section id="sec-catalog" class="hidden space-y-4">
-        <!-- Add / Edit Product Form -->
         <div class="glass-card rounded-2xl p-4 border border-gold-500/25">
           <div class="flex items-center justify-between mb-3">
             <h2 id="formModeTitle" class="text-xs font-bold text-gold-400 uppercase tracking-wider flex items-center gap-2">
@@ -198,12 +192,14 @@
 
           <input type="hidden" id="editProdId">
           <div class="space-y-2.5 text-xs">
-            <input type="text" id="prodName" placeholder="Product Name (e.g. Classmate 172pg Notebook)" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-white placeholder-slate-500">
+            <input type="text" id="prodName" placeholder="Product Name (e.g. Gold Jhumka Set / Classmate Copy)" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-white placeholder-slate-500">
             
             <div class="grid grid-cols-2 gap-2">
               <select id="prodCategory" class="bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-slate-200">
                 <option value="Notebooks">Notebooks & Books</option>
                 <option value="Pens">Pens & Writing</option>
+                <option value="Jewelry">Jewelry</option>
+                <option value="Fancy">Fancy Items</option>
                 <option value="Exam">Exam Essentials</option>
                 <option value="Art">Art Supplies</option>
                 <option value="Office">Files & Paper</option>
@@ -222,15 +218,13 @@
           </div>
         </div>
 
-        <!-- Seed Starter Items Helper (Shown if DB has 0 items) -->
         <div id="seedStarterCard" class="glass-card rounded-2xl p-4 border border-emerald-500/30 hidden">
-          <p class="text-xs text-slate-200 font-semibold mb-2">Want to import the 12 starter stationery items into your editable list?</p>
+          <p class="text-xs text-slate-200 font-semibold mb-2">Want to import the 12 starter items (including Jewelry & Fancy) into your editable list?</p>
           <button onclick="importStarterCatalog()" class="w-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold py-2 rounded-xl text-xs">
             Import 12 Starter Items Now
           </button>
         </div>
 
-        <!-- Search & Manage 100+ Products -->
         <div class="glass-card rounded-2xl p-4 border border-white/10">
           <div class="flex items-center justify-between mb-3">
             <h2 class="text-xs font-bold text-white uppercase tracking-wider">Inventory (<span id="listProdCount">0</span>)</h2>
@@ -238,6 +232,8 @@
               <option value="All">All Categories</option>
               <option value="Notebooks">Notebooks</option>
               <option value="Pens">Pens</option>
+              <option value="Jewelry">Jewelry</option>
+              <option value="Fancy">Fancy Items</option>
               <option value="Exam">Exam</option>
               <option value="Art">Art</option>
               <option value="Office">Office</option>
@@ -377,7 +373,6 @@
       });
     }
 
-    // ==================== ANALYTICS & 1-YEAR RECORDS ====================
     function setFilterPeriod(period) {
       currentFilterPeriod = period;
       document.querySelectorAll('.period-btn').forEach(btn => {
@@ -433,7 +428,7 @@
         <div class="bg-obsidian-900/80 border border-white/5 rounded-xl p-2.5 flex items-center justify-between">
           <div>
             <p class="font-bold text-white">${o.customer} <span class="text-[10px] text-slate-500 font-normal">• ${new Date(o.timestamp).toLocaleDateString('en-IN')}</span></p>
-            <p class="text-[11px] text-slate-400 line-clamp-1">${o.items || 'Stationery Order'}</p>
+            <p class="text-[11px] text-slate-400 line-clamp-1">${o.items || 'Store Order'}</p>
           </div>
           <span class="font-extrabold text-gold-400 text-sm">₹${o.amount}</span>
         </div>
@@ -507,7 +502,6 @@
       a.click();
     }
 
-    // ==================== PRODUCT CATALOG (100+ SCALE) ====================
     function compressImage(file, callback) {
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -654,19 +648,18 @@
         "prod_02": { id: "prod_02", name: "Classmate Soft Cover Ruled Copy (120 Pgs)", category: "Notebooks", price: 45, inStock: true, image: "https://images.unsplash.com/photo-1589998059171-988d887df646?w=300" },
         "prod_03": { id: "prod_03", name: "Reynolds 045 Fine Carbure Pen (Pack of 5)", category: "Pens", price: 50, inStock: true, image: "https://images.unsplash.com/photo-1585336261026-70e28f117f7b?w=300" },
         "prod_04": { id: "prod_04", name: "Reynolds Trimax Liquid Gel Pen (Blue)", category: "Pens", price: 60, inStock: true, image: "https://images.unsplash.com/photo-1569683795645-b62e50fbf103?w=300" },
-        "prod_05": { id: "prod_05", name: "Doms Mathematical Instruments Box", category: "Exam", price: 120, inStock: true, image: "https://images.unsplash.com/photo-1596495577886-d920f1fb7238?w=300" },
-        "prod_06": { id: "prod_06", name: "Transparent Hard Exam Clip Board", category: "Exam", price: 65, inStock: true, image: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=300" },
-        "prod_07": { id: "prod_07", name: "Faber-Castell 12 Bi-Colour Pencils", category: "Art", price: 110, inStock: true, image: "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=300" },
-        "prod_08": { id: "prod_08", name: "Doms 24 Plastic Crayons Tin Box", category: "Art", price: 80, inStock: true, image: "https://images.unsplash.com/photo-1520690214124-2405c5217036?w=300" },
-        "prod_09": { id: "prod_09", name: "JK Copier A4 Paper Bundle (100 Sheets)", category: "Office", price: 95, inStock: true, image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=300" },
-        "prod_10": { id: "prod_10", name: "Kangaro No. 10 Stapler + Pins", category: "Office", price: 85, inStock: true, image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300" },
-        "prod_11": { id: "prod_11", name: "Fevicol MR Squeezy Bottle (100g)", category: "Art", price: 40, inStock: true, image: "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=300" },
-        "prod_12": { id: "prod_12", name: "Camlin Pastel Highlighters (Pack of 5)", category: "Pens", price: 100, inStock: true, image: "https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?w=300" }
+        "prod_05": { id: "prod_05", name: "Gold-Plated Traditional Jhumka Earrings", category: "Jewelry", price: 140, inStock: true, image: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=300" },
+        "prod_06": { id: "prod_06", name: "Pearl & Stone Bangle Bracelet Set", category: "Jewelry", price: 180, inStock: true, image: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=300" },
+        "prod_07": { id: "prod_07", name: "Unicorn Designer Gift Pouch & Keychain", category: "Fancy", price: 90, inStock: true, image: "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=300" },
+        "prod_08": { id: "prod_08", name: "Velvet Hair Claw Clips & Scrunchies Combo", category: "Fancy", price: 75, inStock: true, image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=300" },
+        "prod_09": { id: "prod_09", name: "Doms Mathematical Drawing Instruments Box", category: "Exam", price: 120, inStock: true, image: "https://images.unsplash.com/photo-1596495577886-d920f1fb7238?w=300" },
+        "prod_10": { id: "prod_10", name: "Transparent Hard Exam Pad / Clip Board", category: "Exam", price: 65, inStock: true, image: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=300" },
+        "prod_11": { id: "prod_11", name: "Faber-Castell 12 Bi-Colour Colour Pencils", category: "Art", price: 110, inStock: true, image: "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=300" },
+        "prod_12": { id: "prod_12", name: "JK Copier A4 Paper Bundle (100 Sheets)", category: "Office", price: 95, inStock: true, image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=300" }
       };
-      db.ref('products').set(starter).then(() => alert("12 Starter items imported! You can now edit prices or photos."));
+      db.ref('products').set(starter).then(() => alert("12 Starter items imported (including Jewelry & Fancy Items)!"));
     }
 
-    // ==================== STORE SETTINGS & GPS ====================
     function populateSettings() {
       document.getElementById('cfgMinOrder').value = storeSettings.minOrderValue ?? 50;
       document.getElementById('cfgFreeDelivery').value = storeSettings.freeDeliveryAbove ?? 250;
