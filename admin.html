@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Muni Stationery • Royal Admin Console</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
+          },
+          colors: {
+            gold: {
+              300: '#F3E5AB',
+              400: '#E6C687',
+              500: '#D4AF37',
+              600: '#AA820A',
+            },
+            obsidian: {
+              900: '#06080F',
+              800: '#0B0F19',
+              700: '#131B2E',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #FFF6D6 0%, #D4AF37 50%, #AA820A 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .gold-btn {
+      background: linear-gradient(135deg, #E6C687 0%, #D4AF37 50%, #B8860B 100%);
+      box-shadow: 0 4px 18px rgba(212, 175, 55, 0.25);
+    }
+    .gold-btn:active { transform: scale(0.98); }
+    .glass-card {
+      background: rgba(19, 27, 46, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(212, 175, 55, 0.16);
+    }
+    .glass-nav {
+      background: rgba(11, 15, 25, 0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-obsidian-900 text-slate-100 min-h-screen pb-24 font-sans selection:bg-gold-500 selection:text-black">
+
+  <!-- PIN Security Gate -->
+  <div id="pinModal" class="fixed inset-0 bg-obsidian-900/95 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+    <div class="glass-card rounded-3xl p-7 w-full max-w-sm text-center border border-gold-500/30 shadow-2xl">
+      <div class="w-16 h-16 bg-gold-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gold-500/30">
+        <i class="fa-solid fa-crown text-gold-400 text-2xl"></i>
+      </div>
+      <h2 class="text-lg font-serif font-extrabold gold-gradient-text uppercase tracking-wider mb-1">Owner Console</h2>
+      <p class="text-xs text-slate-400 mb-5">Enter 4-Digit Security PIN</p>
+      <input type="password" id="pinInput" maxlength="4" inputmode="numeric" placeholder="••••" class="w-full bg-obsidian-800 border border-gold-500/30 text-gold-300 text-center text-3xl tracking-[0.5em] rounded-2xl py-3.5 mb-4 focus:outline-none focus:border-gold-400">
+      <button onclick="verifyPin()" class="w-full gold-btn text-black font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg">
+        Unlock Command Center
+      </button>
+      <p id="pinError" class="text-rose-400 text-xs font-semibold mt-3 hidden">Invalid PIN. Please try again.</p>
+    </div>
+  </div>
+
+  <!-- Main Admin Interface -->
+  <div id="adminContent" class="hidden">
+    <!-- Top Header -->
+    <header class="glass-nav sticky top-0 z-40 px-4 py-3.5">
+      <div class="max-w-lg mx-auto flex items-center justify-between">
+        <div>
+          <h1 class="text-sm font-serif font-extrabold gold-gradient-text uppercase tracking-wider">Muni Admin</h1>
+          <p class="text-[10px] text-emerald-400 flex items-center gap-1 mt-0.5">
+            <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Real-Time Sync Active
+          </p>
+        </div>
+        <button onclick="toggleStoreStatus()" id="storeStatusBtn" class="px-3.5 py-2 rounded-xl text-[11px] font-extrabold text-black bg-emerald-400 shadow-lg flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-store"></i> <span id="storeStatusText">Store Open</span>
+        </button>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="max-w-lg mx-auto grid grid-cols-3 gap-2 mt-3">
+        <button onclick="switchTab('analytics')" id="tab-analytics" class="tab-btn py-2 rounded-xl text-[11px] font-extrabold gold-btn text-black">
+          <i class="fa-solid fa-chart-line mr-1"></i> Analytics
+        </button>
+        <button onclick="switchTab('catalog')" id="tab-catalog" class="tab-btn py-2 rounded-xl text-[11px] font-semibold glass-card text-slate-300">
+          <i class="fa-solid fa-boxes-stacked mr-1"></i> Items (<span id="topProdCount">0</span>)
+        </button>
+        <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn py-2 rounded-xl text-[11px] font-semibold glass-card text-slate-300">
+          <i class="fa-solid fa-sliders mr-1"></i> Rules & GPS
+        </button>
+      </div>
+    </header>
+
+    <main class="max-w-lg mx-auto px-4 mt-4 space-y-4">
+
+      <!-- ==================== TAB 1: ANALYTICS & 1-YEAR RECORDS ==================== -->
+      <section id="sec-analytics" class="space-y-4">
+        <!-- Timeframe Selector -->
+        <div class="flex gap-1.5 overflow-x-auto no-scrollbar text-[11px]">
+          <button onclick="setFilterPeriod('today')" class="period-btn px-3 py-1.5 rounded-lg font-bold gold-btn text-black whitespace-nowrap">Today</button>
+          <button onclick="setFilterPeriod('week')" class="period-btn px-3 py-1.5 rounded-lg font-medium glass-card text-slate-300 whitespace-nowrap">This Week</button>
+          <button onclick="setFilterPeriod('month')" class="period-btn px-3 py-1.5 rounded-lg font-medium glass-card text-slate-300 whitespace-nowrap">This Month</button>
+          <button onclick="setFilterPeriod('year')" class="period-btn px-3 py-1.5 rounded-lg font-medium glass-card text-slate-300 whitespace-nowrap">1-Year Archive</button>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="glass-card rounded-2xl p-4 border border-gold-500/20">
+            <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Total Revenue</p>
+            <p class="text-2xl font-extrabold gold-gradient-text mt-1">₹<span id="statRevenue">0</span></p>
+            <p class="text-[10px] text-emerald-400 mt-1" id="statPeriodLabel">Filtered: Today</p>
+          </div>
+          <div class="glass-card rounded-2xl p-4 border border-gold-500/20">
+            <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Orders Completed</p>
+            <p class="text-2xl font-extrabold text-white mt-1" id="statOrders">0</p>
+            <p class="text-[10px] text-gold-400 mt-1">Avg: ₹<span id="statAOV">0</span> / order</p>
+          </div>
+        </div>
+
+        <!-- Quick Log Completed WhatsApp Order -->
+        <div class="glass-card rounded-2xl p-4 border border-gold-500/20">
+          <h3 class="text-xs font-bold text-gold-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-receipt"></i> Log Completed WhatsApp Order
+          </h3>
+          <div class="grid grid-cols-2 gap-2 text-xs mb-2">
+            <input type="text" id="logCustName" placeholder="Customer Name" class="bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-white placeholder-slate-500">
+            <input type="number" id="logAmount" placeholder="Total Bill (₹)" class="bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-white placeholder-slate-500">
+          </div>
+          <input type="text" id="logItemsSummary" placeholder="Items summary (e.g. 4 Classmate books, 1 pen set)" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 mb-3">
+          <button onclick="logCompletedOrder()" class="w-full gold-btn text-black font-extrabold py-2.5 rounded-xl text-xs">
+            + Record Sale in Ledger
+          </button>
+        </div>
+
+        <!-- Data Reset & 1-Year CSV Export Controls -->
+        <div class="glass-card rounded-2xl p-4 border border-white/10 space-y-3">
+          <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-database text-gold-400"></i> Ledger Controls & Export
+          </h3>
+          
+          <button onclick="exportCSV()" class="w-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-file-csv text-sm"></i> Export 1-Year Sales Data (Excel / CSV)
+          </button>
+
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button onclick="resetAnalyticsView()" class="bg-obsidian-800 hover:bg-obsidian-700 border border-gold-500/25 text-gold-300 font-semibold py-2 rounded-xl text-[11px]">
+              <i class="fa-solid fa-rotate-right mr-1"></i> Reset Current Stats
+            </button>
+            <button onclick="purgeOldYearData()" class="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-semibold py-2 rounded-xl text-[11px]">
+              <i class="fa-solid fa-broom mr-1"></i> Clear &gt;1 Yr Records
+            </button>
+          </div>
+          <p class="text-[10px] text-slate-500 leading-relaxed">
+            * "Reset Current Stats" sets a fresh baseline from right now for your dashboard counter while preserving your 1-year CSV archive.
+          </p>
+        </div>
+
+        <!-- Recent Order Ledger -->
+        <div class="glass-card rounded-2xl p-4 border border-white/10">
+          <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">Recent Sales Log</h3>
+          <div id="salesHistoryList" class="space-y-2 max-h-60 overflow-y-auto text-xs no-scrollbar">
+            <p class="text-slate-500 text-center py-4">No orders logged yet.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 2: 100+ PRODUCT INVENTORY ==================== -->
+      <section id="sec-catalog" class="hidden space-y-4">
+        <!-- Add / Edit Product Form -->
+        <div class="glass-card rounded-2xl p-4 border border-gold-500/25">
+          <div class="flex items-center justify-between mb-3">
+            <h2 id="formModeTitle" class="text-xs font-bold text-gold-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-plus-circle"></i> Add New Product
+            </h2>
+            <button onclick="cancelEdit()" id="cancelEditBtn" class="hidden text-[10px] text-rose-400 font-bold underline">Cancel Edit</button>
+          </div>
+
+          <input type="hidden" id="editProdId">
+          <div class="space-y-2.5 text-xs">
+            <input type="text" id="prodName" placeholder="Product Name (e.g. Classmate 172pg Notebook)" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-white placeholder-slate-500">
+            
+            <div class="grid grid-cols-2 gap-2">
+              <select id="prodCategory" class="bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-slate-200">
+                <option value="Notebooks">Notebooks & Books</option>
+                <option value="Pens">Pens & Writing</option>
+                <option value="Exam">Exam Essentials</option>
+                <option value="Art">Art Supplies</option>
+                <option value="Office">Files & Paper</option>
+              </select>
+              <input type="number" id="prodPrice" placeholder="Price (₹)" class="bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-white placeholder-slate-500">
+            </div>
+
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Product Image (Camera or Gallery — Auto-Compressed)</label>
+              <input type="file" id="prodImageFile" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gold-500/20 file:text-gold-300">
+            </div>
+
+            <button onclick="saveProduct()" id="saveProdBtn" class="w-full gold-btn text-black font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg mt-1">
+              Publish to Store
+            </button>
+          </div>
+        </div>
+
+        <!-- Seed Starter Items Helper (Shown if DB has 0 items) -->
+        <div id="seedStarterCard" class="glass-card rounded-2xl p-4 border border-emerald-500/30 hidden">
+          <p class="text-xs text-slate-200 font-semibold mb-2">Want to import the 12 starter stationery items into your editable list?</p>
+          <button onclick="importStarterCatalog()" class="w-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold py-2 rounded-xl text-xs">
+            Import 12 Starter Items Now
+          </button>
+        </div>
+
+        <!-- Search & Manage 100+ Products -->
+        <div class="glass-card rounded-2xl p-4 border border-white/10">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xs font-bold text-white uppercase tracking-wider">Inventory (<span id="listProdCount">0</span>)</h2>
+            <select id="adminCatFilter" onchange="renderAdminProducts()" class="bg-obsidian-900 border border-white/10 rounded-lg px-2 py-1 text-[11px] text-gold-300">
+              <option value="All">All Categories</option>
+              <option value="Notebooks">Notebooks</option>
+              <option value="Pens">Pens</option>
+              <option value="Exam">Exam</option>
+              <option value="Art">Art</option>
+              <option value="Office">Office</option>
+            </select>
+          </div>
+
+          <input type="text" id="adminSearchInput" oninput="renderAdminProducts()" placeholder="Search across 100+ items to edit..." class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 mb-3">
+
+          <div id="adminProductList" class="space-y-2.5 max-h-[55vh] overflow-y-auto no-scrollbar">
+            <p class="text-xs text-slate-500 text-center py-6">Loading inventory...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 3: DELIVERY RULES & GPS ==================== -->
+      <section id="sec-settings" class="hidden space-y-4">
+        <div class="glass-card rounded-2xl p-4 border border-gold-500/25 space-y-3">
+          <h2 class="text-xs font-bold text-gold-400 uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-truck-fast"></i> Pricing & Radius Rules
+          </h2>
+
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-400 mb-1">Min Order Value (₹)</label>
+              <input type="number" id="cfgMinOrder" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-white font-bold">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Free Delivery Above (₹)</label>
+              <input type="number" id="cfgFreeDelivery" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-white font-bold">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Base Delivery Fee (₹)</label>
+              <input type="number" id="cfgBaseFee" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-white font-bold">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Per-KM Charge (₹/km)</label>
+              <input type="number" id="cfgPerKm" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-white font-bold">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Max Radius (KM)</label>
+              <input type="number" step="0.5" id="cfgMaxRadius" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-white font-bold">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">WhatsApp No. (with 91)</label>
+              <input type="text" id="cfgWhatsapp" placeholder="919876543210" class="w-full bg-obsidian-900 border border-white/10 rounded-xl p-2.5 text-white font-bold">
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-white/10">
+            <label class="block text-xs text-slate-400 mb-1.5">Shop Center Coordinates (Odisha)</label>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+              <input type="number" step="0.000001" id="cfgLat" placeholder="Latitude" class="bg-obsidian-900 border border-white/10 rounded-xl p-2 text-xs text-white">
+              <input type="number" step="0.000001" id="cfgLon" placeholder="Longitude" class="bg-obsidian-900 border border-white/10 rounded-xl p-2 text-xs text-white">
+            </div>
+            <button onclick="calibrateStoreGPS()" class="w-full bg-obsidian-800 hover:bg-obsidian-700 border border-gold-500/30 text-gold-300 text-xs py-2.5 rounded-xl font-bold flex items-center justify-center gap-2">
+              <i class="fa-solid fa-location-crosshairs"></i> Calibrate Using Current Phone GPS
+            </button>
+          </div>
+
+          <button onclick="saveStoreSettings()" class="w-full gold-btn text-black font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg mt-2">
+            Save & Sync All Settings
+          </button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAFY5QES8VX9PWXDoQaz_J0WjhPciNwKMg",
+      authDomain: "muni-378e5.firebaseapp.com",
+      databaseURL: "https://muni-378e5-default-rtdb.firebaseio.com",
+      projectId: "muni-378e5",
+      storageBucket: "muni-378e5.firebasestorage.app",
+      messagingSenderId: "999778171397",
+      appId: "1:999778171397:web:a9c2102e8bcana61b2ba6c"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let storeSettings = {};
+    let products = {};
+    let orderHistory = {};
+    let currentFilterPeriod = 'today';
+    let resetTimestamp = parseInt(localStorage.getItem('muni_stats_reset_ts') || '0');
+
+    function verifyPin() {
+      if (document.getElementById('pinInput').value === "1234") {
+        document.getElementById('pinModal').classList.add('hidden');
+        document.getElementById('adminContent').classList.remove('hidden');
+        initListeners();
+      } else {
+        document.getElementById('pinError').classList.remove('hidden');
+      }
+    }
+
+    function switchTab(tab) {
+      ['analytics', 'catalog', 'settings'].forEach(t => {
+        document.getElementById(`sec-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`tab-${t}`);
+        btn.className = "tab-btn py-2 rounded-xl text-[11px] font-semibold glass-card text-slate-300";
+      });
+      document.getElementById(`sec-${tab}`).classList.remove('hidden');
+      document.getElementById(`tab-${tab}`).className = "tab-btn py-2 rounded-xl text-[11px] font-extrabold gold-btn text-black";
+    }
+
+    function initListeners() {
+      db.ref('store_settings').on('value', (snap) => {
+        storeSettings = snap.val() || {
+          freeDeliveryAbove: 250,
+          minOrderValue: 50,
+          baseDeliveryFee: 20,
+          perKmCharge: 10,
+          maxRadiusKm: 5.0,
+          whatsappNumber: "919876543210",
+          shopLat: 20.2961,
+          shopLon: 85.8245,
+          isOpen: true
+        };
+        populateSettings();
+      });
+
+      db.ref('products').on('value', (snap) => {
+        products = snap.val() || {};
+        const count = Object.keys(products).length;
+        document.getElementById('topProdCount').innerText = count;
+        document.getElementById('listProdCount').innerText = count;
+        document.getElementById('seedStarterCard').classList.toggle('hidden', count > 0);
+        renderAdminProducts();
+      });
+
+      db.ref('order_history').on('value', (snap) => {
+        orderHistory = snap.val() || {};
+        renderAnalytics();
+      });
+    }
+
+    // ==================== ANALYTICS & 1-YEAR RECORDS ====================
+    function setFilterPeriod(period) {
+      currentFilterPeriod = period;
+      document.querySelectorAll('.period-btn').forEach(btn => {
+        btn.className = "period-btn px-3 py-1.5 rounded-lg font-medium glass-card text-slate-300 whitespace-nowrap";
+      });
+      event.target.className = "period-btn px-3 py-1.5 rounded-lg font-bold gold-btn text-black whitespace-nowrap";
+      renderAnalytics();
+    }
+
+    function renderAnalytics() {
+      const now = Date.now();
+      const dayMs = 86400000;
+      let cutoff = 0;
+
+      if (currentFilterPeriod === 'today') {
+        const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
+        cutoff = startOfDay.getTime();
+        document.getElementById('statPeriodLabel').innerText = "Filtered: Today";
+      } else if (currentFilterPeriod === 'week') {
+        cutoff = now - (7 * dayMs);
+        document.getElementById('statPeriodLabel').innerText = "Filtered: Last 7 Days";
+      } else if (currentFilterPeriod === 'month') {
+        cutoff = now - (30 * dayMs);
+        document.getElementById('statPeriodLabel').innerText = "Filtered: Last 30 Days";
+      } else {
+        cutoff = now - (365 * dayMs);
+        document.getElementById('statPeriodLabel').innerText = "Filtered: 1-Year Archive";
+      }
+
+      const effectiveCutoff = Math.max(cutoff, resetTimestamp);
+      let revenue = 0;
+      let count = 0;
+      const entries = Object.values(orderHistory).sort((a, b) => b.timestamp - a.timestamp);
+
+      entries.forEach(order => {
+        if (order.timestamp >= effectiveCutoff) {
+          revenue += Number(order.amount || 0);
+          count++;
+        }
+      });
+
+      document.getElementById('statRevenue').innerText = revenue.toLocaleString('en-IN');
+      document.getElementById('statOrders').innerText = count;
+      document.getElementById('statAOV').innerText = count > 0 ? Math.round(revenue / count) : 0;
+
+      const listEl = document.getElementById('salesHistoryList');
+      if (entries.length === 0) {
+        listEl.innerHTML = `<p class="text-slate-500 text-center py-4">No orders logged yet.</p>`;
+        return;
+      }
+
+      listEl.innerHTML = entries.slice(0, 30).map(o => `
+        <div class="bg-obsidian-900/80 border border-white/5 rounded-xl p-2.5 flex items-center justify-between">
+          <div>
+            <p class="font-bold text-white">${o.customer} <span class="text-[10px] text-slate-500 font-normal">• ${new Date(o.timestamp).toLocaleDateString('en-IN')}</span></p>
+            <p class="text-[11px] text-slate-400 line-clamp-1">${o.items || 'Stationery Order'}</p>
+          </div>
+          <span class="font-extrabold text-gold-400 text-sm">₹${o.amount}</span>
+        </div>
+      `).join('');
+    }
+
+    function logCompletedOrder() {
+      const customer = document.getElementById('logCustName').value.trim();
+      const amount = parseFloat(document.getElementById('logAmount').value);
+      const items = document.getElementById('logItemsSummary').value.trim();
+
+      if (!customer || isNaN(amount) || amount <= 0) {
+        alert("Enter valid Customer Name and Bill Amount.");
+        return;
+      }
+
+      db.ref('order_history').push({
+        customer,
+        amount,
+        items,
+        timestamp: Date.now()
+      }).then(() => {
+        document.getElementById('logCustName').value = "";
+        document.getElementById('logAmount').value = "";
+        document.getElementById('logItemsSummary').value = "";
+        alert("Sale recorded in ledger!");
+      });
+    }
+
+    function resetAnalyticsView() {
+      if (confirm("Reset dashboard counters to ₹0 starting from now? (Your 1-year CSV data stays safely backed up)")) {
+        resetTimestamp = Date.now();
+        localStorage.setItem('muni_stats_reset_ts', resetTimestamp.toString());
+        renderAnalytics();
+      }
+    }
+
+    function purgeOldYearData() {
+      const oneYearAgo = Date.now() - (365 * 86400000);
+      if (confirm("Delete records older than 1 year from Firebase to keep storage clean?")) {
+        Object.keys(orderHistory).forEach(key => {
+          if (orderHistory[key].timestamp < oneYearAgo) {
+            db.ref(`order_history/${key}`).remove();
+          }
+        });
+        alert("Records older than 1 year cleared.");
+      }
+    }
+
+    function exportCSV() {
+      const entries = Object.values(orderHistory);
+      if (entries.length === 0) {
+        alert("No order records available to export.");
+        return;
+      }
+      let csv = "Date,Time,Customer Name,Items Summary,Amount (INR)\n";
+      entries.forEach(o => {
+        const d = new Date(o.timestamp);
+        const dateStr = d.toLocaleDateString('en-IN');
+        const timeStr = d.toLocaleTimeString('en-IN');
+        const cleanCust = `"${(o.customer || '').replace(/"/g, '""')}"`;
+        const cleanItems = `"${(o.items || '').replace(/"/g, '""')}"`;
+        csv += `${dateStr},${timeStr},${cleanCust},${cleanItems},${o.amount}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Muni_Stationery_Sales_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    }
+
+    // ==================== PRODUCT CATALOG (100+ SCALE) ====================
+    function compressImage(file, callback) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const maxDim = 480;
+          let w = img.width, h = img.height;
+          if (w > h && w > maxDim) { h *= maxDim / w; w = maxDim; }
+          else if (h > maxDim) { w *= maxDim / h; h = maxDim; }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          callback(canvas.toDataURL('image/jpeg', 0.65));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function saveProduct() {
+      const editId = document.getElementById('editProdId').value;
+      const name = document.getElementById('prodName').value.trim();
+      const category = document.getElementById('prodCategory').value;
+      const price = parseFloat(document.getElementById('prodPrice').value);
+      const fileInput = document.getElementById('prodImageFile');
+
+      if (!name || isNaN(price)) {
+        alert("Please enter both Product Name and Price.");
+        return;
+      }
+
+      const commitData = (imgUrl) => {
+        if (editId) {
+          const updates = { name, category, price };
+          if (imgUrl) updates.image = imgUrl;
+          db.ref(`products/${editId}`).update(updates).then(() => {
+            cancelEdit();
+            alert("Product updated!");
+          });
+        } else {
+          const newRef = db.ref('products').push();
+          newRef.set({
+            id: newRef.key,
+            name,
+            category,
+            price,
+            inStock: true,
+            image: imgUrl || "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=300"
+          }).then(() => {
+            cancelEdit();
+            alert("New item added to store!");
+          });
+        }
+      };
+
+      if (fileInput.files && fileInput.files[0]) {
+        compressImage(fileInput.files[0], commitData);
+      } else {
+        commitData(null);
+      }
+    }
+
+    function startEditProduct(id) {
+      const item = products[id];
+      if (!item) return;
+      document.getElementById('editProdId').value = id;
+      document.getElementById('prodName').value = item.name;
+      document.getElementById('prodCategory').value = item.category;
+      document.getElementById('prodPrice').value = item.price;
+      document.getElementById('formModeTitle').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> Editing Item`;
+      document.getElementById('saveProdBtn').innerText = "Update Item";
+      document.getElementById('cancelEditBtn').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+      document.getElementById('editProdId').value = "";
+      document.getElementById('prodName').value = "";
+      document.getElementById('prodPrice').value = "";
+      document.getElementById('prodImageFile').value = "";
+      document.getElementById('formModeTitle').innerHTML = `<i class="fa-solid fa-plus-circle"></i> Add New Product`;
+      document.getElementById('saveProdBtn').innerText = "Publish to Store";
+      document.getElementById('cancelEditBtn').classList.add('hidden');
+    }
+
+    function renderAdminProducts() {
+      const list = document.getElementById('adminProductList');
+      const query = document.getElementById('adminSearchInput').value.toLowerCase();
+      const catFilter = document.getElementById('adminCatFilter').value;
+
+      const keys = Object.keys(products).filter(id => {
+        const p = products[id];
+        const matchCat = catFilter === 'All' || p.category === catFilter;
+        const matchSearch = p.name.toLowerCase().includes(query);
+        return matchCat && matchSearch;
+      });
+
+      if (keys.length === 0) {
+        list.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">No matching items found.</p>`;
+        return;
+      }
+
+      list.innerHTML = keys.map(id => {
+        const p = products[id];
+        const inStock = p.inStock !== false;
+        return `
+          <div class="bg-obsidian-900/90 border border-white/10 rounded-xl p-2.5 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <img src="${p.image}" class="w-11 h-11 rounded-lg object-cover bg-obsidian-800 shrink-0">
+              <div class="min-w-0">
+                <p class="text-xs font-bold text-white truncate">${p.name}</p>
+                <p class="text-[11px] text-gold-400 font-extrabold">₹${p.price} <span class="text-slate-500 font-normal">• ${p.category}</span></p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="toggleStock('${id}', ${!inStock})" class="px-2 py-1 rounded-lg text-[10px] font-bold ${inStock ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-400'}">
+                ${inStock ? 'In Stock' : 'Out'}
+              </button>
+              <button onclick="startEditProduct('${id}')" class="w-7 h-7 rounded-lg bg-gold-500/15 text-gold-300 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button onclick="deleteProduct('${id}')" class="w-7 h-7 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleStock(id, status) {
+      db.ref(`products/${id}/inStock`).set(status);
+    }
+
+    function deleteProduct(id) {
+      if (confirm("Delete this item permanently?")) {
+        db.ref(`products/${id}`).remove();
+      }
+    }
+
+    function importStarterCatalog() {
+      const starter = {
+        "prod_01": { id: "prod_01", name: "Classmate Long Notebook (172 Pages)", category: "Notebooks", price: 70, inStock: true, image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300" },
+        "prod_02": { id: "prod_02", name: "Classmate Soft Cover Ruled Copy (120 Pgs)", category: "Notebooks", price: 45, inStock: true, image: "https://images.unsplash.com/photo-1589998059171-988d887df646?w=300" },
+        "prod_03": { id: "prod_03", name: "Reynolds 045 Fine Carbure Pen (Pack of 5)", category: "Pens", price: 50, inStock: true, image: "https://images.unsplash.com/photo-1585336261026-70e28f117f7b?w=300" },
+        "prod_04": { id: "prod_04", name: "Reynolds Trimax Liquid Gel Pen (Blue)", category: "Pens", price: 60, inStock: true, image: "https://images.unsplash.com/photo-1569683795645-b62e50fbf103?w=300" },
+        "prod_05": { id: "prod_05", name: "Doms Mathematical Instruments Box", category: "Exam", price: 120, inStock: true, image: "https://images.unsplash.com/photo-1596495577886-d920f1fb7238?w=300" },
+        "prod_06": { id: "prod_06", name: "Transparent Hard Exam Clip Board", category: "Exam", price: 65, inStock: true, image: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=300" },
+        "prod_07": { id: "prod_07", name: "Faber-Castell 12 Bi-Colour Pencils", category: "Art", price: 110, inStock: true, image: "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=300" },
+        "prod_08": { id: "prod_08", name: "Doms 24 Plastic Crayons Tin Box", category: "Art", price: 80, inStock: true, image: "https://images.unsplash.com/photo-1520690214124-2405c5217036?w=300" },
+        "prod_09": { id: "prod_09", name: "JK Copier A4 Paper Bundle (100 Sheets)", category: "Office", price: 95, inStock: true, image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=300" },
+        "prod_10": { id: "prod_10", name: "Kangaro No. 10 Stapler + Pins", category: "Office", price: 85, inStock: true, image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300" },
+        "prod_11": { id: "prod_11", name: "Fevicol MR Squeezy Bottle (100g)", category: "Art", price: 40, inStock: true, image: "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=300" },
+        "prod_12": { id: "prod_12", name: "Camlin Pastel Highlighters (Pack of 5)", category: "Pens", price: 100, inStock: true, image: "https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?w=300" }
+      };
+      db.ref('products').set(starter).then(() => alert("12 Starter items imported! You can now edit prices or photos."));
+    }
+
+    // ==================== STORE SETTINGS & GPS ====================
+    function populateSettings() {
+      document.getElementById('cfgMinOrder').value = storeSettings.minOrderValue ?? 50;
+      document.getElementById('cfgFreeDelivery').value = storeSettings.freeDeliveryAbove ?? 250;
+      document.getElementById('cfgBaseFee').value = storeSettings.baseDeliveryFee ?? 20;
+      document.getElementById('cfgPerKm').value = storeSettings.perKmCharge ?? 10;
+      document.getElementById('cfgMaxRadius').value = storeSettings.maxRadiusKm ?? 5.0;
+      document.getElementById('cfgWhatsapp').value = storeSettings.whatsappNumber ?? "919876543210";
+      document.getElementById('cfgLat').value = storeSettings.shopLat ?? 20.2961;
+      document.getElementById('cfgLon').value = storeSettings.shopLon ?? 85.8245;
+
+      const btn = document.getElementById('storeStatusBtn');
+      const txt = document.getElementById('storeStatusText');
+      if (storeSettings.isOpen !== false) {
+        btn.className = "px-3.5 py-2 rounded-xl text-[11px] font-extrabold text-black bg-emerald-400 shadow-lg flex items-center gap-1.5 transition";
+        txt.innerText = "Store Open";
+      } else {
+        btn.className = "px-3.5 py-2 rounded-xl text-[11px] font-extrabold text-white bg-rose-600 shadow-lg flex items-center gap-1.5 transition";
+        txt.innerText = "Store Closed";
+      }
+    }
+
+    function toggleStoreStatus() {
+      db.ref('store_settings/isOpen').set(storeSettings.isOpen === false);
+    }
+
+    function calibrateStoreGPS() {
+      if (!navigator.geolocation) {
+        alert("GPS not supported.");
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          document.getElementById('cfgLat').value = pos.coords.latitude.toFixed(6);
+          document.getElementById('cfgLon').value = pos.coords.longitude.toFixed(6);
+          alert("Coordinates captured! Tap 'Save & Sync All Settings' below.");
+        },
+        () => alert("Allow GPS access to calibrate store coordinates."),
+        { enableHighAccuracy: true }
+      );
+    }
+
+    function saveStoreSettings() {
+      const updated = {
+        minOrderValue: parseFloat(document.getElementById('cfgMinOrder').value) || 50,
+        freeDeliveryAbove: parseFloat(document.getElementById('cfgFreeDelivery').value) || 250,
+        baseDeliveryFee: parseFloat(document.getElementById('cfgBaseFee').value) || 20,
+        perKmCharge: parseFloat(document.getElementById('cfgPerKm').value) || 10,
+        maxRadiusKm: parseFloat(document.getElementById('cfgMaxRadius').value) || 5.0,
+        whatsappNumber: document.getElementById('cfgWhatsapp').value.trim(),
+        shopLat: parseFloat(document.getElementById('cfgLat').value) || 20.2961,
+        shopLon: parseFloat(document.getElementById('cfgLon').value) || 85.8245,
+        isOpen: storeSettings.isOpen !== false
+      };
+      db.ref('store_settings').update(updated).then(() => {
+        alert("Settings saved and synced to Customer APK!");
+      });
+    }
+  </script>
+</body>
+</html>
