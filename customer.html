@@ -136,7 +136,7 @@
     <!-- Search Input -->
     <div class="relative mb-3">
       <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-gold-500/60 text-xs"></i>
-      <input type="text" id="searchInput" oninput="filterCatalog()" placeholder="Search notebooks, pens, geometry boxes..." class="w-full bg-obsidian-800/80 border border-gold-500/20 text-slate-200 placeholder-slate-500 rounded-2xl py-3 pl-11 pr-4 text-xs focus:outline-none focus:border-gold-500/60 focus:ring-1 focus:ring-gold-500/40">
+      <input type="text" id="searchInput" oninput="filterCatalog()" placeholder="Search notebooks, pens, jewelry, fancy items..." class="w-full bg-obsidian-800/80 border border-gold-500/20 text-slate-200 placeholder-slate-500 rounded-2xl py-3 pl-11 pr-4 text-xs focus:outline-none focus:border-gold-500/60 focus:ring-1 focus:ring-gold-500/40">
     </div>
 
     <!-- Category Pills -->
@@ -144,6 +144,8 @@
       <button onclick="selectCategory('All')" class="cat-pill px-4 py-2 rounded-xl text-xs font-semibold gold-btn text-black whitespace-nowrap">All Items</button>
       <button onclick="selectCategory('Notebooks')" class="cat-pill px-4 py-2 rounded-xl text-xs font-medium glass-card text-slate-300 border border-gold-500/15 whitespace-nowrap">Notebooks & Books</button>
       <button onclick="selectCategory('Pens')" class="cat-pill px-4 py-2 rounded-xl text-xs font-medium glass-card text-slate-300 border border-gold-500/15 whitespace-nowrap">Pens & Writing</button>
+      <button onclick="selectCategory('Jewelry')" class="cat-pill px-4 py-2 rounded-xl text-xs font-medium glass-card text-slate-300 border border-gold-500/15 whitespace-nowrap">Jewelry</button>
+      <button onclick="selectCategory('Fancy')" class="cat-pill px-4 py-2 rounded-xl text-xs font-medium glass-card text-slate-300 border border-gold-500/15 whitespace-nowrap">Fancy Items</button>
       <button onclick="selectCategory('Exam')" class="cat-pill px-4 py-2 rounded-xl text-xs font-medium glass-card text-slate-300 border border-gold-500/15 whitespace-nowrap">Exam Essentials</button>
       <button onclick="selectCategory('Art')" class="cat-pill px-4 py-2 rounded-xl text-xs font-medium glass-card text-slate-300 border border-gold-500/15 whitespace-nowrap">Art Supplies</button>
       <button onclick="selectCategory('Office')" class="cat-pill px-4 py-2 rounded-xl text-xs font-medium glass-card text-slate-300 border border-gold-500/15 whitespace-nowrap">Files & Paper</button>
@@ -278,14 +280,14 @@
       "prod_02": { name: "Classmate Soft Cover Ruled Copy (120 Pgs)", category: "Notebooks", price: 45, inStock: true, image: "https://images.unsplash.com/photo-1589998059171-988d887df646?w=300" },
       "prod_03": { name: "Reynolds 045 Fine Carbure Ball Pen (Pack of 5)", category: "Pens", price: 50, inStock: true, image: "https://images.unsplash.com/photo-1585336261026-70e28f117f7b?w=300" },
       "prod_04": { name: "Reynolds Trimax Liquid Gel Pen (Blue)", category: "Pens", price: 60, inStock: true, image: "https://images.unsplash.com/photo-1569683795645-b62e50fbf103?w=300" },
-      "prod_05": { name: "Doms Mathematical Drawing Instruments Box", category: "Exam", price: 120, inStock: true, image: "https://images.unsplash.com/photo-1596495577886-d920f1fb7238?w=300" },
-      "prod_06": { name: "Transparent Hard Exam Pad / Clip Board", category: "Exam", price: 65, inStock: true, image: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=300" },
-      "prod_07": { name: "Faber-Castell 12 Bi-Colour Colour Pencils", category: "Art", price: 110, inStock: true, image: "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=300" },
-      "prod_08": { name: "Doms 24 Plastic Crayons Tin Box", category: "Art", price: 80, inStock: true, image: "https://images.unsplash.com/photo-1520690214124-2405c5217036?w=300" },
-      "prod_09": { name: "JK Copier A4 Paper Bundle (100 Sheets)", category: "Office", price: 95, inStock: true, image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=300" },
-      "prod_10": { name: "Kangaro Heavy Duty No. 10 Stapler + Pins", category: "Office", price: 85, inStock: true, image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300" },
-      "prod_11": { name: "Fevicol MR Squeezy Bottle (100g)", category: "Art", price: 40, inStock: true, image: "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=300" },
-      "prod_12": { name: "Camlin Pastel Highlighters (Pack of 5)", category: "Pens", price: 100, inStock: true, image: "https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?w=300" }
+      "prod_05": { name: "Gold-Plated Traditional Jhumka Earrings", category: "Jewelry", price: 140, inStock: true, image: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=300" },
+      "prod_06": { name: "Pearl & Stone Bangle Bracelet Set", category: "Jewelry", price: 180, inStock: true, image: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=300" },
+      "prod_07": { name: "Unicorn Designer Gift Pouch & Keychain", category: "Fancy", price: 90, inStock: true, image: "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=300" },
+      "prod_08": { name: "Velvet Hair Claw Clips & Scrunchies Combo", category: "Fancy", price: 75, inStock: true, image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=300" },
+      "prod_09": { name: "Doms Mathematical Drawing Instruments Box", category: "Exam", price: 120, inStock: true, image: "https://images.unsplash.com/photo-1596495577886-d920f1fb7238?w=300" },
+      "prod_10": { name: "Transparent Hard Exam Pad / Clip Board", category: "Exam", price: 65, inStock: true, image: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=300" },
+      "prod_11": { name: "Faber-Castell 12 Bi-Colour Colour Pencils", category: "Art", price: 110, inStock: true, image: "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=300" },
+      "prod_12": { name: "JK Copier A4 Paper Bundle (100 Sheets)", category: "Office", price: 95, inStock: true, image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=300" }
     };
 
     let allProducts = starterProducts;
@@ -411,7 +413,7 @@
       });
 
       if (filtered.length === 0) {
-        grid.innerHTML = `<div class="col-span-2 text-center py-16 text-slate-500 text-xs">No matching stationery items found.</div>`;
+        grid.innerHTML = `<div class="col-span-2 text-center py-16 text-slate-500 text-xs">No matching items found in this section.</div>`;
         return;
       }
 
@@ -593,7 +595,7 @@
 
       const minVal = storeSettings.minOrderValue || 50;
       if (subtotal < minVal) {
-        alert(`Minimum order value is ₹${minVal}. Please add more stationery.`);
+        alert(`Minimum order value is ₹${minVal}. Please add more items.`);
         return;
       }
 
